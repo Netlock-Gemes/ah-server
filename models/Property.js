@@ -20,7 +20,11 @@ const PropertySchema = new mongoose.Schema({
   images: {
     type: [String],
     default: []
-  }
+  },
+  interestedBy: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }]
 });
 
 module.exports = mongoose.model('Property', PropertySchema);

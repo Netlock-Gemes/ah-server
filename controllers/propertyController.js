@@ -5,7 +5,7 @@ const upload = require('../middleware/upload');
 // Admin creates a new property
 exports.createProperty = async (req, res) => {
   const { title, description, price, location } = req.body;
-  const images = req.files.map(file => file.path); // Assuming files are saved to a specific path
+  const images = req.files.map(file => file.path);
 
   try {
     // Check if the user is an admin
@@ -31,38 +31,49 @@ exports.createProperty = async (req, res) => {
 };
 
 
-// User expresses interest in a property
-exports.expressInterest = async (req, res) => {
+// Toggle interest in a property
+exports.toggleInterest = async (req, res) => {
   const { propertyId } = req.body;
+  const userId = req.user.id;
 
   try {
-    // Find the user
-    const user = await User.findById(req.user.id);
+    // Find the user and the property
+    const user = await User.findById(userId);
+    const property = await Property.findById(propertyId);
+
     if (!user) {
       return res.status(404).json({ msg: 'User not found' });
     }
-
-    // Find the property
-    const property = await Property.findById(propertyId);
+    
     if (!property) {
       return res.status(404).json({ msg: 'Property not found' });
     }
 
-    // Check if the property is already in the user's list
-    if (user.interestedProperties.includes(propertyId)) {
-      return res.status(400).json({ msg: 'Property already in your interested list' });
+    // Check if the user is already interested
+    const isInterested = user.interestedProperties.includes(propertyId);
+
+    if (isInterested) {
+      // Remove from interested properties
+      user.interestedProperties = user.interestedProperties.filter(id => id.toString() !== propertyId);
+      property.interestedBy = property.interestedBy.filter(id => id.toString() !== userId);
+    } else {
+      // Add to interested properties
+      user.interestedProperties.push(propertyId);
+      property.interestedBy.push(userId);
     }
 
-    // Add the property to the user's interested list
-    user.interestedProperties.push(propertyId);
+    // Save both documents
     await user.save();
+    await property.save();
 
-    res.json(user);
+    // Return updated user
+    res.json({ user, property });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
   }
 };
+
 
 // Get properties a user is interested in
 exports.getInterestedProperties = async (req, res) => {
@@ -86,6 +97,24 @@ exports.getAllProperties = async (req, res) => {
     // Fetch all properties
     const properties = await Property.find();
     res.json(properties);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+};
+
+// Fetch a property by its ID
+exports.getPropertyById = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Find the property by its ID
+    const property = await Property.findById(id);
+    if (!property) {
+      return res.status(404).json({ msg: 'Property not found' });
+    }
+
+    res.json(property);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
