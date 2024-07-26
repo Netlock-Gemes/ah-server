@@ -1,9 +1,11 @@
 const Property = require('../models/Property');
 const User = require('../models/User');
+const upload = require('../middleware/upload');
 
 // Admin creates a new property
 exports.createProperty = async (req, res) => {
   const { title, description, price, location } = req.body;
+  const images = req.files.map(file => file.path); // Assuming files are saved to a specific path
 
   try {
     // Check if the user is an admin
@@ -16,7 +18,8 @@ exports.createProperty = async (req, res) => {
       title,
       description,
       price,
-      location
+      location,
+      images
     });
 
     await property.save();
@@ -26,6 +29,7 @@ exports.createProperty = async (req, res) => {
     res.status(500).send('Server error');
   }
 };
+
 
 // User expresses interest in a property
 exports.expressInterest = async (req, res) => {
@@ -70,6 +74,18 @@ exports.getInterestedProperties = async (req, res) => {
     }
 
     res.json(user.interestedProperties);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+};
+
+// Get all properties
+exports.getAllProperties = async (req, res) => {
+  try {
+    // Fetch all properties
+    const properties = await Property.find();
+    res.json(properties);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
