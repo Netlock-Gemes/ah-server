@@ -1,50 +1,28 @@
 const mongoose = require('mongoose');
 
-const ScoreSchema = new mongoose.Schema({
-  economics: {
-    type: Number,
-    default: 0,
-  },
-  it: {
-    type: Number,
-    default: 0,
-  },
-  history: {
-    type: Number,
-    default: 0,
-  },
-  science: {
-    type: Number,
-    default: 0,
-  },
-  gk: {
-    type: Number,
-    default: 0,
-  },
-});
-
 const UserSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: true,
+    required: true
   },
   email: {
     type: String,
     required: true,
-    unique: true,
+    unique: true
   },
   password: {
     type: String,
-    required: true,
+    required: true
   },
-  date: {
-    type: Date,
-    default: Date.now,
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user'
   },
-  score: {
-    type: ScoreSchema,
-    default: () => ({}),
-  },
+  interestedProperties: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Property'
+  }]
 });
 
 module.exports = mongoose.model('User', UserSchema);

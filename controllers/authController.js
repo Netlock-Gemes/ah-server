@@ -6,7 +6,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 exports.register = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, role } = req.body;
 
   try {
     let user = await User.findOne({ email });
@@ -14,10 +14,14 @@ exports.register = async (req, res) => {
       return res.status(400).json({ msg: 'User already exists' });
     }
 
+    const validRoles = ['user', 'admin'];
+    const userRole = validRoles.includes(role) ? role : 'user';
+
     user = new User({
       name,
       email,
       password,
+      role: userRole
     });
 
     const salt = await bcrypt.genSalt(10);
@@ -28,7 +32,8 @@ exports.register = async (req, res) => {
     const payload = {
       user: {
         id: user.id,
-      },
+        role: user.role
+      }
     };
 
     jwt.sign(
@@ -63,7 +68,8 @@ exports.login = async (req, res) => {
     const payload = {
       user: {
         id: user.id,
-      },
+        role: user.role
+      }
     };
 
     jwt.sign(
@@ -96,6 +102,10 @@ exports.getUser = async (req, res) => {
 
 exports.getAllUsersData = async (req, res) => {
   try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ msg: 'Access denied' });
+    }
+
     const users = await User.find().select('-password');
     if (!users) {
       return res.status(404).json({ msg: 'No users found' });
@@ -107,18 +117,28 @@ exports.getAllUsersData = async (req, res) => {
   }
 };
 
-exports.submitScore = async (req, res) => {
-  const { category, score } = req.body;
+exports.updateUserRole = async (req, res) => {
+  const { id } = req.params;
+  const { role } = req.body;
 
   try {
-    const user = await User.findById(req.user.id);
+    // Check if the role is valid
+    const validRoles = ['user', 'admin'];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({ msg: 'Invalid role' });
+    }
+
+    // Find the user by ID
+    let user = await User.findById(id);
     if (!user) {
       return res.status(404).json({ msg: 'User not found' });
     }
 
-    user.score[category] = score;
+    // Update the user’s role
+    user.role = role;
     await user.save();
-    res.json(user);
+
+    res.json({ msg: 'User role updated', user });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
