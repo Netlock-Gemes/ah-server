@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createProperty, expressInterest, getInterestedProperties, getAllProperties, getPropertyById, toggleInterest } = require('../controllers/propertyController');
+const { createProperty, getInterestedProperties, getAllProperties, getPropertyById, toggleInterest, updateProperty } = require('../controllers/propertyController');
 const auth = require('../middleware/auth');
 const upload = require('../middleware/upload');
 
@@ -11,6 +11,14 @@ router.post('/create', auth, upload.array('images', 3), (req, res, next) => {
   }
   next();
 }, createProperty);
+
+// Admin route to update a property
+router.put('/:id', auth, (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ msg: 'Access denied' });
+  }
+  next();
+}, updateProperty);
 
 // User expresses interest in a property (now toggles interest)
 router.post('/interest', auth, toggleInterest);

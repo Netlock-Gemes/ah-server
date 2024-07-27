@@ -122,19 +122,16 @@ exports.updateUserRole = async (req, res) => {
   const { role } = req.body;
 
   try {
-    // Check if the role is valid
     const validRoles = ['user', 'admin'];
     if (!validRoles.includes(role)) {
       return res.status(400).json({ msg: 'Invalid role' });
     }
 
-    // Find the user by ID
     let user = await User.findById(id);
     if (!user) {
       return res.status(404).json({ msg: 'User not found' });
     }
 
-    // Update the user’s role
     user.role = role;
     await user.save();
 
