@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createProperty, getInterestedProperties, getAllProperties, getPropertyById, toggleInterest, updateProperty } = require('../controllers/propertyController');
+const { createProperty, getInterestedProperties, getAllProperties, getPropertyById, toggleInterest, updateProperty, deleteProperty } = require('../controllers/propertyController');
 const auth = require('../middleware/auth');
 const upload = require('../middleware/upload');
 
@@ -31,5 +31,13 @@ router.get('/all', getAllProperties);
 
 // Get a property by ID
 router.get('/:id', getPropertyById);
+
+// Admin route to delete a property
+router.delete('/:id', auth, (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ msg: 'Access denied' });
+  }
+  next();
+}, deleteProperty);
 
 module.exports = router;

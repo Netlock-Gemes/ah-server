@@ -1,6 +1,9 @@
 const Property = require('../models/Property');
 const User = require('../models/User');
 const upload = require('../middleware/upload');
+const fs = require('fs');
+const path = require('path');
+
 
 exports.createProperty = async (req, res) => {
   const { title, description, price, location } = req.body;
@@ -127,6 +130,39 @@ exports.updateProperty = async (req, res) => {
 
     await property.save();
     res.json(property);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+};
+
+exports.deleteProperty = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ msg: 'Access denied' });
+    }
+
+    const property = await Property.findById(id);
+    if (!property) {
+      return res.status(404).json({ msg: 'Property not found' });
+    }
+
+    property.images.forEach(image => {
+      fs.unlink(path.join(__dirname, '../', image), (err) => {
+        if (err) console.log(`Failed to delete image ${image}:`, err);
+      });
+    });
+
+    await Property.findByIdAndDelete(id);
+
+    await User.updateMany(
+      { interestedProperties: id },
+      { $pull: { interestedProperties: id } }
+    );
+
+    res.json({ msg: 'Property deleted' });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
